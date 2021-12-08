@@ -21,15 +21,43 @@ rep_missing_obs <- function(lags, LHS, RHS, frq){
   last_LHS_obs <- max(LHS[is.finite(value)]$ref_date)
   if(lags>0){
     sq <- LHS[ref_date <= last_LHS_obs]$ref_date
-    last_LHS_obs <- sq[length(sq) - lags]
+    last_LHS_obs <- sq[length(sq) - lags] # move back to to the previous LHS observation for each lag
   }
   RHS_tail <- RHS[ref_date>last_LHS_obs]
   RHS_tail[ , index_of_observations := seq(.N), by = series_name]
   RHS_tail[!is.finite(value), index_of_observations := NA]
   
   RHS_0 <- copy(RHS) # make a new copy
-  RHS_0[ , LHS_index := end_of_period(ref_date, period = frq, shift = lags)]
-  RHS_0[ , index_of_observations := seq(.N), by = .(series_name, LHS_index)]
+  lhs_dates <- LHS$ref_date
+  ndates <- length(lhs_dates)
+  if(frq == "other"){
+    RHS_0[ , LHS_index := as.Date(NA)]
+    for(j in seq(ndates-1)){
+      RHS_0[ref_date > lhs_dates[j] & ref_date <= lhs_dates[j+1], LHS_index := lhs_dates[j+1]]
+    }
+    RHS_0[ref_date > lhs_dates[ndates], LHS_index := lhs_dates[ndates]]
+    RHS_0[ , index_of_observations := seq(.N), by = .(series_name, LHS_index)]
+    
+    #turd
+    
+    RHS_0 <- RHS_0[!LHS_index==0] # drop incomplete first period
+    RHS_0[ , index_of_observations := seq(.N), by = .(series_name, LHS_index)] # index each observation in the period
+    max_obs <- max(RHS_0[LHS_index < max(LHS_index)]$index_of_observations)
+    
+    RHS_0 <- RHS_0[index_of_observations <= ]
+    
+    which.max(RHSX[LHS_index < max(LHS_index)]$index_of_observations)
+    
+    RHSX <- RHS_0[order(series_name, ref_date)]
+    RHS_0[ , tmp := NULL]
+    
+    
+    
+  }else{
+    # what if contemporaneous data goes beyond the current forecast period??
+    RHS_0[ , LHS_index := end_of_period(ref_date, period = frq, shift = lags)]
+    RHS_0[ , index_of_observations := seq(.N), by = .(series_name, LHS_index)]
+  }
   
   # Drop observations we do not see in the contemporaneous data
   for(this_series_name in unique(RHS_0$series_name)){
@@ -87,7 +115,7 @@ cast_LHS <- function(lags, LHS, frq){
 #' LHS <- fred[series_name == "gdp constant prices"]
 #' RHS <- fred[series_name != "gdp constant prices"]
 #' dt <- process_MF(LHS, RHS)
-process_MF <- function(LHS, RHS, LHS_lags = 1, RHS_lags = 1, as_of = NULL, frq = c('auto', 'week', 'month', 'quarter', 'year'), 
+process_MF <- function(LHS, RHS, LHS_lags = 1, RHS_lags = 1, as_of = NULL, frq = c('auto', 'week', 'month', 'quarter', 'year', 'other'), 
                        date_name = "ref_date", id_name = "series_name", value_name = "value", pub_date_name = "pub_date", 
                        return_dt = TRUE){
   
@@ -145,6 +173,9 @@ process_MF <- function(LHS, RHS, LHS_lags = 1, RHS_lags = 1, as_of = NULL, frq =
     }
     if(frq == 'day') stop('LHS data is high frequency')
   }
+  
+  LHS <- LHS[order(ref_date)]
+  RHS <- RHS[order(ref_date, series_name)]
 
   RHS_list <- lapply(seq(0, RHS_lags), FUN=rep_missing_obs, LHS=LHS, RHS=RHS, frq=frq)
   rhs <- Reduce(function(...) merge(..., by = "ref_date", all = TRUE), RHS_list) # merge lists together
