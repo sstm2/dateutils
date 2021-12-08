@@ -30,33 +30,19 @@ rep_missing_obs <- function(lags, LHS, RHS, frq){
   RHS_0 <- copy(RHS) # make a new copy
   lhs_dates <- LHS$ref_date
   ndates <- length(lhs_dates)
-  if(frq == "other"){
+  if(frq == "other"){ # this requires no breaks in the sequence of dates
     RHS_0[ , LHS_index := as.Date(NA)]
     for(j in seq(ndates-1)){
       RHS_0[ref_date > lhs_dates[j] & ref_date <= lhs_dates[j+1], LHS_index := lhs_dates[j+1]]
     }
     RHS_0[ref_date > lhs_dates[ndates], LHS_index := lhs_dates[ndates]]
     RHS_0[ , index_of_observations := seq(.N), by = .(series_name, LHS_index)]
-    
-    #turd
-    
-    RHS_0 <- RHS_0[!LHS_index==0] # drop incomplete first period
-    RHS_0[ , index_of_observations := seq(.N), by = .(series_name, LHS_index)] # index each observation in the period
-    max_obs <- max(RHS_0[LHS_index < max(LHS_index)]$index_of_observations)
-    
-    RHS_0 <- RHS_0[index_of_observations <= ]
-    
-    which.max(RHSX[LHS_index < max(LHS_index)]$index_of_observations)
-    
-    RHSX <- RHS_0[order(series_name, ref_date)]
-    RHS_0[ , tmp := NULL]
-    
-    
-    
+    RHS_0 <- RHS_0[LHS_index != min(LHS_index)] # drop incomplete first period
   }else{
     # what if contemporaneous data goes beyond the current forecast period??
     RHS_0[ , LHS_index := end_of_period(ref_date, period = frq, shift = lags)]
     RHS_0[ , index_of_observations := seq(.N), by = .(series_name, LHS_index)]
+    RHS_0 <- RHS_0[LHS_index != min(LHS_index)]
   }
   
   # Drop observations we do not see in the contemporaneous data
@@ -72,12 +58,19 @@ rep_missing_obs <- function(lags, LHS, RHS, frq){
   RHS_0 <- dcast(RHS_0, LHS_index ~ series_name, value.var = 'V1')
   names(RHS_0) <- c("ref_date", paste(names(RHS_0)[-1], lags))
   
+  # drop periods beyond one step ahead
+  RHS_0 <- RHS_0[seq(which(RHS_0$ref_date==last_LHS_obs)+1)] 
+  
   return(RHS_0)
 }
 
 cast_LHS <- function(lags, LHS, frq){
   lhs <- copy(LHS)
-  lhs[ , ref_date := end_of_period(ref_date, period = frq, shift = lags)]
+  if(frq == "other"){
+    lhs[ , value := shift(value, lags)]
+  }else{
+    lhs[ , ref_date := end_of_period(ref_date, period = frq, shift = lags)]
+  }
   lhs <- dcast(lhs, ref_date ~ series_name, value.var = 'value')
   names(lhs) <- c("ref_date", paste(names(lhs)[-1], lags))
   return(lhs)
