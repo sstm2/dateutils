@@ -6,6 +6,7 @@
 .Rhistory
 src/Rbackend.dll
 *.dll
+*.so
 src-i386/
 src-x64/
 LICENSE
