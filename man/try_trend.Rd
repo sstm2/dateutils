@@ -4,7 +4,7 @@
 \alias{try_trend}
 \title{Estimate low frequnecy trends}
 \usage{
-try_trend(x, outlier_rm = TRUE, span = 0.6)
+try_trend(x, outlier_rm = TRUE, span = 1)
 }
 \arguments{
 \item{x}{data}

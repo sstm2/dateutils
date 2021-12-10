@@ -146,6 +146,8 @@ process_MF <- function(LHS, RHS, LHS_lags = 1, RHS_lags = 1, as_of = NULL, frq =
     }
   }
   
+  if(frq == "other" && !is.na(tail(LHS$value,1))) stop("For frq = 'other' forecast date must be included in LHS; i.e. the last value of LHS must be NA")
+  
   if('country'%in%names(RHS)){
     if(length(unique(RHS$country))>1){
       RHS[ , series_name := paste(country, series_name)]

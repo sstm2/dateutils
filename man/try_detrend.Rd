@@ -4,7 +4,7 @@
 \alias{try_detrend}
 \title{Remove low frequency trends from data}
 \usage{
-try_detrend(x, outlier_rm = TRUE, span = 0.6)
+try_detrend(x, outlier_rm = TRUE, span = 1)
 }
 \arguments{
 \item{x}{data}

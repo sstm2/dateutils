@@ -21,7 +21,7 @@ Imports:
   data.table (>= 1.9.8),
   seasonal
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 LazyData: true
 Encoding: UTF-8
 VignetteBuilder: knitr, rmarkdown

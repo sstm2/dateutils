@@ -10,7 +10,7 @@ process_MF(
   LHS_lags = 1,
   RHS_lags = 1,
   as_of = NULL,
-  frq = c("auto", "week", "month", "quarter", "year"),
+  frq = c("auto", "week", "month", "quarter", "year", "other"),
   date_name = "ref_date",
   id_name = "series_name",
   value_name = "value",
