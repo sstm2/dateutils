@@ -21,15 +21,24 @@ rep_missing_obs <- function(lags, LHS, RHS, frq){
   last_LHS_obs <- max(LHS[is.finite(value)]$ref_date)
   if(lags>0){
     sq <- LHS[ref_date <= last_LHS_obs]$ref_date
-    last_LHS_obs <- sq[length(sq) - lags] # move back to to the previous LHS observation for each lag
+    last_LHS_lag <- sq[length(sq) - lags] # move back to to the previous LHS observation for each lag
   }
-  RHS_tail <- RHS[ref_date>last_LHS_obs]
-  RHS_tail[ , index_of_observations := seq(.N), by = series_name]
-  RHS_tail[!is.finite(value), index_of_observations := NA]
+  else{
+    last_LHS_lag <- last_LHS_obs
+  }
+  RHS_tail <- RHS[ref_date>last_LHS_lag]
+  if(NROW(RHS_tail)==0){
+    return(data.table("ref_date"=as.Date(integer(0), origin="1970-01-01")))
+  }
   
   RHS_0 <- copy(RHS) # make a new copy
   lhs_dates <- LHS$ref_date
   ndates <- length(lhs_dates)
+  
+  # get index for RHS observations which exist in the tail of the data
+  RHS_tail[ , index_of_observations := seq(.N), by = series_name]
+  RHS_tail[!is.finite(value), index_of_observations := NA]
+  
   if(frq == "other"){ # this requires no breaks in the sequence of dates
     RHS_0[ , LHS_index := as.Date(NA)]
     for(j in seq(ndates-1)){
@@ -39,10 +48,9 @@ rep_missing_obs <- function(lags, LHS, RHS, frq){
     RHS_0[ , index_of_observations := seq(.N), by = .(series_name, LHS_index)]
     RHS_0 <- RHS_0[LHS_index != min(LHS_index)] # drop incomplete first period
   }else{
-    # what if contemporaneous data goes beyond the current forecast period??
     RHS_0[ , LHS_index := end_of_period(ref_date, period = frq, shift = lags)]
     RHS_0[ , index_of_observations := seq(.N), by = .(series_name, LHS_index)]
-    RHS_0 <- RHS_0[LHS_index != min(LHS_index)]
+    RHS_0 <- RHS_0[LHS_index != min(LHS_index)] # drop first incomplete period
   }
   
   # Drop observations we do not see in the contemporaneous data
@@ -89,7 +97,7 @@ cast_LHS <- function(lags, LHS, frq){
 #' of RHS data to the output, and `LHS_lags` to add lags of LHS data to the output. By default the function will return
 #' data in long format designed to be used with the `dateutils` function `process()`. Specifying `return_dt = FALSE` will 
 #' return LHS variables in the matrix `Y`, RHS variables in the matrix `X`, and corresponding dates (by index) in the
-#' date vector `dates`.
+#' date vector `dates`. Forecast horizon is always one step ahead of the latest observation. 
 #'
 #' @param LHS Left hand side data in long format. May include multiple LHS variables, but LHS variance MUST have the same frequency.
 #' @param RHS Right hand side data in long format at any frequency.
