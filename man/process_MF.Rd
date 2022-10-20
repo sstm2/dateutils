@@ -57,7 +57,7 @@ Right hand side data will always include observations contemporaneous with LHS d
 of RHS data to the output, and `LHS_lags` to add lags of LHS data to the output. By default the function will return
 data in long format designed to be used with the `dateutils` function `process()`. Specifying `return_dt = FALSE` will 
 return LHS variables in the matrix `Y`, RHS variables in the matrix `X`, and corresponding dates (by index) in the
-date vector `dates`.
+date vector `dates`. Forecast horizon is always one step ahead of the latest observation.
 }
 \examples{
  
