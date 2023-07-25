@@ -104,7 +104,7 @@ can_seasonal <- function(dates){
       stop("Frequency is not monthly or quarterly")
     }
   }
-  df        <- data.frame("ref_date" = ts_date, unclass(x))
+  df        <- data.frame("ref_date" = ts_date, "value" = unclass(x))
   return(df)
 }
 
